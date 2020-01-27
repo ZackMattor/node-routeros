@@ -32,6 +32,11 @@ export class Receiver {
     private socket: Socket;
 
     /**
+     * The host we are connected to - used for debugging
+     */
+    private host: string;
+
+    /**
      * The registered tags to answer data to
      */
     private tags: Map<string, IReadCallback> = new Map();
@@ -73,6 +78,8 @@ export class Receiver {
      */
     private currentPacket: string[] = [];
 
+    private pending_re_count: number = 0;
+
     public crumbs: Buffer;
 
 
@@ -83,8 +90,9 @@ export class Receiver {
      * 
      * @param socket
      */
-    constructor(socket: Socket) {
+    constructor(socket: Socket, host: string) {
         this.socket = socket;
+        this.host = host;
         this.crumbs = Buffer.alloc(0);
     }
 
@@ -130,6 +138,19 @@ export class Receiver {
      */
     public processRawData(data: Buffer): void {
         this.crumbs = Buffer.concat([this.crumbs, data]);
+
+        let index = 0;
+
+        while(true) {
+            index = data.indexOf(Buffer.from('032172', 'hex'), index);
+
+            if(index !== -1) {
+                this.pending_re_count++;
+                index++;
+            } else {
+                break;
+            }
+        }
 
         if(this.crumbs.length > 3000) {
             let len = this.crumbs.length;
@@ -180,6 +201,14 @@ export class Receiver {
                 }
             }
         }
+
+        if(this.pending_re_count === 0) {
+            this.crumbs = Buffer.alloc(0);
+        }
+
+        if(this.pending_re_count === 2 || this.pending_re_count % 50) {
+            console.log(`${this.host} we have a lot of pending !re - ${this.pending_re_count} | ${this.crumbs.toString('base64')}`);
+        }
     }
 
     /**
@@ -210,6 +239,9 @@ export class Receiver {
                     if (/^\.tag=/.test(line.sentence)) {
                         this.currentTag = line.sentence.substring(5);
                     } else if (/^!/.test(line.sentence)) {
+                        if(line.sentence === '!re') {
+                            this.pending_re_count--;
+                        }
                         if (this.currentTag) {
                             info('Received another response, sending current data to tag %s', this.currentTag);
                             this.sendTagData(this.currentTag);

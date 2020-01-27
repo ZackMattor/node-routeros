@@ -100,13 +100,13 @@ export class Connector extends EventEmitter {
                 if (this.tls) {
                     this.socket = tls.connect(this.port, this.host, this.tls, this.onConnect.bind(this));
                     this.transmitter = new Transmitter(this.socket);
-                    this.receiver = new Receiver(this.socket);
+                    this.receiver = new Receiver(this.socket, this.host);
                     this.socket.on('data', this.onData.bind(this));
                     this.socket.on('tlsClientError', this.onError.bind(this));
                 } else {
                     this.socket = new Socket();
                     this.transmitter = new Transmitter(this.socket);
-                    this.receiver = new Receiver(this.socket);
+                    this.receiver = new Receiver(this.socket, this.host);
                     this.socket.once('connect', this.onConnect.bind(this));
                     this.socket.once('end', this.onEnd.bind(this));
                     this.socket.once('timeout', this.onTimeout.bind(this));
