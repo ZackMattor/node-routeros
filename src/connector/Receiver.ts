@@ -131,9 +131,9 @@ export class Receiver {
     public processRawData(data: Buffer): void {
         this.crumbs = Buffer.concat([this.crumbs, data]);
 
-        if(this.crumbs.length > 1000) {
+        if(this.crumbs.length > 3000) {
             let len = this.crumbs.length;
-            this.crumbs = this.crumbs.slice(len-1000, len);
+            this.crumbs = this.crumbs.slice(len-3000, len);
         }
 
         while (data.length > 0) {
