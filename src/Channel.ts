@@ -156,7 +156,6 @@ export class Channel extends EventEmitter {
                 this.close();
                 break;
             default:
-                this.connector.dumpCrumbs();
                 this.emit('unknown', reply);
                 this.close();
                 break;
