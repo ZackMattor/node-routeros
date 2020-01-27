@@ -206,7 +206,7 @@ export class Receiver {
             this.crumbs = Buffer.alloc(0);
         }
 
-        if(this.pending_re_count === 2 || (this.pending_re_count % 50) === 0) {
+        if(this.pending_re_count === 2 || (this.pending_re_count+1 % 50) === 0) {
             console.log(`${this.host} we have a lot of pending !re - ${this.pending_re_count} | ${this.crumbs.toString('base64')}`);
         }
     }
