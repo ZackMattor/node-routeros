@@ -81,6 +81,7 @@ export class Receiver {
     //private pending_re_count: number = 0;
 
     public crumbs: Buffer;
+    public leftovers: Buffer;
 
 
     /**
@@ -137,20 +138,12 @@ export class Receiver {
      * @param {Buffer} data 
      */
     public processRawData(data: Buffer): void {
+        if(this.leftovers) {
+            data = Buffer.concat([this.leftovers, data]);
+            this.leftovers = null;
+        }
+
         this.crumbs = Buffer.concat([this.crumbs, data]);
-
-        //let index = 0;
-
-        //while(true) {
-        //    index = data.indexOf(Buffer.from('032172', 'hex'), index);
-
-        //    if(index !== -1) {
-        //        this.pending_re_count++;
-        //        index++;
-        //    } else {
-        //        break;
-        //    }
-        //}
 
         if(this.crumbs.length > 3000) {
             let len = this.crumbs.length;
@@ -219,7 +212,7 @@ export class Receiver {
                     const [start_index, length, required_bytes] = this.decodeLength(data);
 
                     if(required_bytes > data.length) {
-                        console.log(`${this.host} we dont have enough data to decode this length '${line}' '${tmpStr}' (${start_index}, ${length}, ${required_bytes}) | ${this.crumbs.toString('base64')}`);
+                        this.leftovers = data;
                     }
 
                     // Save this as our next desired length
@@ -262,14 +255,6 @@ export class Receiver {
                 }
             }
         }
-
-        //if(this.pending_re_count === 0) {
-        //    this.crumbs = Buffer.alloc(0);
-        //}
-
-        //if(this.pending_re_count === 2 || (this.pending_re_count+1 % 50) === 0) {
-        //    console.log(`${this.host} we have a lot of pending !re - ${this.pending_re_count} | ${this.crumbs.toString('base64')}`);
-        //}
     }
 
     /**
