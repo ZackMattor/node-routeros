@@ -216,7 +216,11 @@ export class Receiver {
 
                     // decode the next part of this packet
                     // Is it possible that we don't have all of the data to decode the length yet? if we only have 1 of the 3 bytes required? Is that possible?
-                    const [start_index, length] = this.decodeLength(data);
+                    const [start_index, length, required_bytes] = this.decodeLength(data);
+
+                    if(required_bytes < data.length) {
+                        console.log(`${this.host} we dont have enough data to decode this length '${line}' '${tmpStr}' (${start_index}, ${length}, ${required_bytes}) | ${this.crumbs.toString('base64')}`);
+                    }
 
                     // Save this as our next desired length
                     this.dataLength = length;
@@ -224,7 +228,7 @@ export class Receiver {
                     // slice off the bytes used to describe the length
                     data = data.slice(start_index);
 
-                    // If we only desire one more kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+                    // If we only desire one more and its the end of the sentance...
                     if (this.dataLength === 1 && data.equals(Buffer.from('\0', 'ascii'))) {
                         this.dataLength = 0;
                         data = data.slice(1); // get rid of excess buffer
@@ -240,7 +244,11 @@ export class Receiver {
             // This ALWAYS gets run first
             } else {
                 // returns back the start index of the data and the length
-                const [start_index, length] = this.decodeLength(data);
+                const [start_index, length, required_bytes] = this.decodeLength(data);
+
+                if(required_bytes < data.length) {
+                  console.log(`${this.host} we dont have enough data to decode this length (${start_index}, ${length}, ${required_bytes}) | ${this.crumbs.toString('base64')}`);
+                }
 
                 // store how long our data is
                 this.dataLength = length;
@@ -362,22 +370,27 @@ export class Receiver {
     private decodeLength(data: Buffer): number[] {
         let len;
         let idx = 0;
+        let required_bytes = 1;
         const b = data[idx++];
 
         if (b & 128) {
             if ((b & 192) === 128) {
+                required_bytes = 2;
                 len = ((b & 63) << 8) + data[idx++];
             } else {
                 if ((b & 224) === 192) {
+                    required_bytes = 3;
                     len = ((b & 31) << 8) + data[idx++];
                     len = (len << 8) + data[idx++];
                 } else {
                     if ((b & 240) === 224) {
+                        required_bytes = 4;
                         len = ((b & 15) << 8) + data[idx++];
                         len = (len << 8) + data[idx++];
                         len = (len << 8) + data[idx++];
                     } else {
                         len = data[idx++];
+                        required_bytes = 5;
                         len = (len << 8) + data[idx++];
                         len = (len << 8) + data[idx++];
                         len = (len << 8) + data[idx++];
@@ -388,7 +401,7 @@ export class Receiver {
             len = b;
         }
 
-        return [idx, len];
+        return [idx, len, required_bytes];
     }
 
 }
