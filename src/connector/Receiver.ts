@@ -163,28 +163,68 @@ export class Receiver {
 
             // If this does not contain the beginning of a packet...
             if (this.dataLength > 0) {
+
+                // If the length of the data we have in our buffer
+                // is less than or equal to that reported by the
+                // bytes used to dermine length...
                 if (data.length <= this.dataLength) {
+
+                    // Subtract the data we are taking from the length we desire
                     this.dataLength -= data.length;
+
+                    // Add this data to our current line
                     this.currentLine += iconv.decode(data, 'win1252');
+
+                    // If there is no more desired data we want...
                     if (this.dataLength === 0) {
+
+                        // Push the data to the sentance
                         this.sentencePipe.push({
                             sentence: this.currentLine,
+                            // ??WAT?? If we this we need more data...?
                             hadMore: (data.length !== this.dataLength)
                         });
+
+                        // process the sentance and clear the line
                         this.processSentence();
                         this.currentLine = '';
                     }
+
+                    // Break out of processRawData and wait for the next
+                    // set of data from the socket
                     break;
+
+                // If we have more data than we desire...
                 } else {
+                    // slice off the part that we desire
                     const tmpBuffer = data.slice(0, this.dataLength);
+
+                    // decode this segment
                     const tmpStr = iconv.decode(tmpBuffer, 'win1252');
+
+                    // Add this to our current line
                     this.currentLine += tmpStr;
+
+                    // save our line...
                     const line = this.currentLine;
+
+                    // clear the current line
                     this.currentLine = '';
+
+                    // cut off the line we just pulled out
                     data = data.slice(this.dataLength);
-                    const [index, length] = this.decodeLength(data);
+
+                    // decode the next part of this packet
+                    // Is it possible that we don't have all of the data to decode the length yet? if we only have 1 of the 3 bytes required? Is that possible?
+                    const [start_index, length] = this.decodeLength(data);
+
+                    // Save this as our next desired length
                     this.dataLength = length;
-                    data = data.slice(index); // get rid of excess buffer
+
+                    // slice off the bytes used to describe the length
+                    data = data.slice(start_index);
+
+                    // If we only desire one more kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
                     if (this.dataLength === 1 && data.equals(Buffer.from('\0', 'ascii'))) {
                         this.dataLength = 0;
                         data = data.slice(1); // get rid of excess buffer
@@ -197,11 +237,16 @@ export class Receiver {
                 }
 
             // This is the beginning of this packet...
+            // This ALWAYS gets run first
             } else {
-                const [index, length] = this.decodeLength(data);
+                // returns back the start index of the data and the length
+                const [start_index, length] = this.decodeLength(data);
 
+                // store how long our data is
                 this.dataLength = length;
-                data = data.slice(index);
+
+                // slice off the bytes used to describe the length
+                data = data.slice(start_index);
 
                 if (this.dataLength === 1 && data.equals(Buffer.from('\0', 'ascii'))) {
                     this.dataLength = 0;
