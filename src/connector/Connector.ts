@@ -138,7 +138,7 @@ export class Connector extends EventEmitter {
     }
 
     public dumpCrumbs() {
-        console.log(this.receiver.crumbs.toString('base64'));
+        console.log(`${this.host} -> ${this.receiver.crumbs.toString('base64')}`);
     }
 
     /**

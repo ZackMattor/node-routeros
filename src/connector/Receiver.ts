@@ -78,7 +78,7 @@ export class Receiver {
      */
     private currentPacket: string[] = [];
 
-    private pending_re_count: number = 0;
+    //private pending_re_count: number = 0;
 
     public crumbs: Buffer;
 
@@ -139,25 +139,29 @@ export class Receiver {
     public processRawData(data: Buffer): void {
         this.crumbs = Buffer.concat([this.crumbs, data]);
 
-        let index = 0;
+        //let index = 0;
 
-        while(true) {
-            index = data.indexOf(Buffer.from('032172', 'hex'), index);
+        //while(true) {
+        //    index = data.indexOf(Buffer.from('032172', 'hex'), index);
 
-            if(index !== -1) {
-                this.pending_re_count++;
-                index++;
-            } else {
-                break;
-            }
-        }
+        //    if(index !== -1) {
+        //        this.pending_re_count++;
+        //        index++;
+        //    } else {
+        //        break;
+        //    }
+        //}
 
         if(this.crumbs.length > 3000) {
             let len = this.crumbs.length;
             this.crumbs = this.crumbs.slice(len-3000, len);
         }
 
+        // Loop through the data we just received
+        // from the socket
         while (data.length > 0) {
+
+            // If this does not contain the beginning of a packet...
             if (this.dataLength > 0) {
                 if (data.length <= this.dataLength) {
                     this.dataLength -= data.length;
@@ -191,10 +195,14 @@ export class Receiver {
                     });
                     this.processSentence();
                 }
+
+            // This is the beginning of this packet...
             } else {
                 const [index, length] = this.decodeLength(data);
+
                 this.dataLength = length;
                 data = data.slice(index);
+
                 if (this.dataLength === 1 && data.equals(Buffer.from('\0', 'ascii'))) {
                     this.dataLength = 0;
                     data = data.slice(1); // get rid of excess buffer
@@ -202,13 +210,13 @@ export class Receiver {
             }
         }
 
-        if(this.pending_re_count === 0) {
-            this.crumbs = Buffer.alloc(0);
-        }
+        //if(this.pending_re_count === 0) {
+        //    this.crumbs = Buffer.alloc(0);
+        //}
 
-        if(this.pending_re_count === 2 || (this.pending_re_count+1 % 50) === 0) {
-            console.log(`${this.host} we have a lot of pending !re - ${this.pending_re_count} | ${this.crumbs.toString('base64')}`);
-        }
+        //if(this.pending_re_count === 2 || (this.pending_re_count+1 % 50) === 0) {
+        //    console.log(`${this.host} we have a lot of pending !re - ${this.pending_re_count} | ${this.crumbs.toString('base64')}`);
+        //}
     }
 
     /**
@@ -239,9 +247,9 @@ export class Receiver {
                     if (/^\.tag=/.test(line.sentence)) {
                         this.currentTag = line.sentence.substring(5);
                     } else if (/^!/.test(line.sentence)) {
-                        if(line.sentence === '!re') {
-                            this.pending_re_count--;
-                        }
+                        //if(line.sentence === '!re') {
+                        //    this.pending_re_count--;
+                        //}
                         if (this.currentTag) {
                             info('Received another response, sending current data to tag %s', this.currentTag);
                             this.sendTagData(this.currentTag);
