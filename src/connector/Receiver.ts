@@ -218,7 +218,7 @@ export class Receiver {
                     // Is it possible that we don't have all of the data to decode the length yet? if we only have 1 of the 3 bytes required? Is that possible?
                     const [start_index, length, required_bytes] = this.decodeLength(data);
 
-                    if(required_bytes < data.length) {
+                    if(required_bytes > data.length) {
                         console.log(`${this.host} we dont have enough data to decode this length '${line}' '${tmpStr}' (${start_index}, ${length}, ${required_bytes}) | ${this.crumbs.toString('base64')}`);
                     }
 
@@ -246,7 +246,7 @@ export class Receiver {
                 // returns back the start index of the data and the length
                 const [start_index, length, required_bytes] = this.decodeLength(data);
 
-                if(required_bytes < data.length) {
+                if(required_bytes > data.length) {
                   console.log(`${this.host} we dont have enough data to decode this length (${start_index}, ${length}, ${required_bytes}) | ${this.crumbs.toString('base64')}`);
                 }
 
